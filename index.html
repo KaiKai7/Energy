@@ -183,9 +183,9 @@
             }
         });
 
-        // Initial fetch for default state (CA)
+        // Initial fetch for default state (AL)
         document.addEventListener('DOMContentLoaded', async () => {
-            const rawData = await fetchData('CA');
+            const rawData = await fetchData('AL');
             if (rawData) {
                 const processedData = processData(rawData);
                 displayData(processedData);
