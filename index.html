@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>US Historical Energy Prices Data</title>
+    <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background-color: #121212; /* Dark background */
+            color: #ffffff;           /* Light text color */
+            font-family: Arial, sans-serif;
+        }
+        label, h1 {
+            color: #ffffff;
+        }
+        h1 {
+            font-family: 'Merriweather', serif; /* Apply the new font to the heading */
+            font-weight: 700; /* Use bold weight for better emphasis */
+        }
+        select, button {
+            background-color: #333333; /* Darker background for inputs */
+            color: #ffffff;            /* Light text color */
+            border: 1px solid #444444; /* Border color */
+            padding: 5px;
+            margin-top: 10px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: #1e1e1e; /* Dark background for table */
+        }
+        table, th, td {
+            border: 1px solid #444444; /* Border color */
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+        }
+        .energy-prices-table {
+            margin-top: 20px;  /* Adds space between the button and the table */
+        }
+    </style>
+</head>
+<body>
+    <h1>Residential Average Monthly Energy Price Data by State</h1>
+
+    <label for="stateSelect">Select a state:</label>
+    <select id="stateSelect">
+        <!-- Options will be added by JavaScript -->
+    </select>
+    <button id="submitBtn">Submit</button>
+
+    <table id="energyPricesTable" class="energy-prices-table">
+        <thead>
+            <tr>
+                <th>Period</th>
+                <th>State Description</th>
+                <th>Price (cents per kWh)</th>
+                <th>Price Units</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <script>
+        const states = [
+            { code: 'AL', name: 'Alabama' },
+            { code: 'AK', name: 'Alaska' },
+            { code: 'AZ', name: 'Arizona' },
+            { code: 'AR', name: 'Arkansas' },
+            { code: 'CA', name: 'California' },
+            { code: 'CO', name: 'Colorado' },
+            { code: 'CT', name: 'Connecticut' },
+            { code: 'DE', name: 'Delaware' },
+            { code: 'FL', name: 'Florida' },
+            { code: 'GA', name: 'Georgia' },
+            { code: 'HI', name: 'Hawaii' },
+            { code: 'ID', name: 'Idaho' },
+            { code: 'IL', name: 'Illinois' },
+            { code: 'IN', name: 'Indiana' },
+            { code: 'IA', name: 'Iowa' },
+            { code: 'KS', name: 'Kansas' },
+            { code: 'KY', name: 'Kentucky' },
+            { code: 'LA', name: 'Louisiana' },
+            { code: 'ME', name: 'Maine' },
+            { code: 'MD', name: 'Maryland' },
+            { code: 'MA', name: 'Massachusetts' },
+            { code: 'MI', name: 'Michigan' },
+            { code: 'MN', name: 'Minnesota' },
+            { code: 'MS', name: 'Mississippi' },
+            { code: 'MO', name: 'Missouri' },
+            { code: 'MT', name: 'Montana' },
+            { code: 'NE', name: 'Nebraska' },
+            { code: 'NV', name: 'Nevada' },
+            { code: 'NH', name: 'New Hampshire' },
+            { code: 'NJ', name: 'New Jersey' },
+            { code: 'NM', name: 'New Mexico' },
+            { code: 'NY', name: 'New York' },
+            { code: 'NC', name: 'North Carolina' },
+            { code: 'ND', name: 'North Dakota' },
+            { code: 'OH', name: 'Ohio' },
+            { code: 'OK', name: 'Oklahoma' },
+            { code: 'OR', name: 'Oregon' },
+            { code: 'PA', name: 'Pennsylvania' },
+            { code: 'RI', name: 'Rhode Island' },
+            { code: 'SC', name: 'South Carolina' },
+            { code: 'SD', name: 'South Dakota' },
+            { code: 'TN', name: 'Tennessee' },
+            { code: 'TX', name: 'Texas' },
+            { code: 'UT', name: 'Utah' },
+            { code: 'VT', name: 'Vermont' },
+            { code: 'VA', name: 'Virginia' },
+            { code: 'WA', name: 'Washington' },
+            { code: 'WV', name: 'West Virginia' },
+            { code: 'WI', name: 'Wisconsin' },
+            { code: 'WY', name: 'Wyoming' }
+        ];
+
+        const stateSelect = document.getElementById('stateSelect');
+        const submitBtn = document.getElementById('submitBtn');
+
+        states.forEach(state => {
+            const option = document.createElement('option');
+            option.value = state.code;
+            option.textContent = state.name;
+            stateSelect.appendChild(option);
+        });
+
+        async function fetchData(stateCode) {
+            try {
+                const url = `https://api.eia.gov/v2/electricity/retail-sales/data/?frequency=monthly&data[0]=price&facets[stateid][]=${stateCode}&facets[sectorid][]=RES&sort[0][column]=period&sort[0][direction]=desc&offset=0&length=5000&api_key=akyqJm4p1qI3qv5eUtu5bhC42WRVFbj14LpBPmC9`;
+                const response = await fetch(url);
+                const data = await response.json();
+                return data.response.data;
+            } catch (error) {
+                console.error('Error fetching data:', error);
+            }
+        }
+
+        function processData(data) {
+            return data.map(item => ({
+                period: item.period,
+                stateDescription: item.stateDescription,
+                price: parseFloat(item.price),
+                priceUnits: item['price-units']
+            })).sort((a, b) => new Date(b.period) - new Date(a.period));
+        }
+
+        function getColor(price) {
+            const minPrice = 4.95;
+            const maxPrice = 45.25;
+            const ratio = (price - minPrice) / (maxPrice - minPrice);
+            const red = Math.round(255 * ratio);
+            const green = Math.round(255 * (1 - ratio));
+            return `rgb(${red}, ${green}, 0)`;
+        }
+
+        function displayData(data) {
+            const tableBody = document.querySelector('#energyPricesTable tbody');
+            tableBody.innerHTML = ''; // Clear previous data
+            data.forEach(item => {
+                const row = document.createElement('tr');
+                row.style.backgroundColor = getColor(item.price);
+                row.innerHTML = `
+                    <td>${item.period}</td>
+                    <td>${item.stateDescription}</td>
+                    <td>${item.price}</td>
+                    <td>${item.priceUnits}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+        submitBtn.addEventListener('click', async () => {
+            const selectedState = stateSelect.value;
+            const rawData = await fetchData(selectedState);
+            if (rawData) {
+                const processedData = processData(rawData);
+                displayData(processedData);
+            } else {
+                console.error('No data fetched.');
+            }
+        });
+
+        // Initial fetch for default state (CA)
+        document.addEventListener('DOMContentLoaded', async () => {
+            const rawData = await fetchData('CA');
+            if (rawData) {
+                const processedData = processData(rawData);
+                displayData(processedData);
+            } else {
+                console.error('No data fetched.');
+            }
+        });
+    </script>
+</body>
+</html>
